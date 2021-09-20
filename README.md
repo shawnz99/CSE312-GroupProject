@@ -13,4 +13,4 @@ Repository for our group project for CSE312 class
   - Andy Chen
 
 - <b> Team Member 4 </b>
-  - Kevin
+  - Kevin Chen
