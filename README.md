@@ -1,4 +1,5 @@
 # CSE312-GroupProject
+## Team Name: C3WAT
 Repository for our group project for CSE312 class
 
 ## Project Idea
