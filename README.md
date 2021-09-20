@@ -1,6 +1,8 @@
 # CSE312-GroupProject
 Repository for our group project for CSE312 class
 
+## Project Idea
+- Have a list of users and then invite them to play a game like tic tac toe or something
 
 ## Team Members
 - <b> Team Member 1 </b>
