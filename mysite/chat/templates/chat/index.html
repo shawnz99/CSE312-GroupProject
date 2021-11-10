@@ -1,0 +1,27 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>CHAT</title>
+    <link rel="stylesheet" type="text/css" href= "{% static 'chat/style.css' %}"/>
+</head>
+
+<body>
+
+<h1>CHAT</h1>
+<label for="chat-comment"> </label>
+<input id="chat-comment" type="text" name="comment">
+
+<button onclick="sendMessage()">Enter</button>
+
+<div id="chat"></div>
+
+
+</body>
+
+
+
+
+</html>
