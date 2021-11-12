@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>CHAT</title>
+    <link rel="stylesheet" type="text/css" href= "{{ url_for('static', filename = 'style.css') }}"/>
+</head>
+
+<body>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+<script src="{{ url_for('static', filename = 'homefunctions.js') }}"></script>
+
+<h1>USERS ONLINE</h1>
+{% for user in users %}
+    <div class = listed_user>
+        <h3> DM {{ user }} </h3>
+        <input id="dm_{{ user }}" type="text" name="dm">
+        <button onclick="sendMessage('{{ user }}')">Send</button>
+    </div>
+{% endfor %}
+
+
+</body>
+
+</html>

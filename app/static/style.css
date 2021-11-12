@@ -1,0 +1,39 @@
+
+input {
+    width: 100%;
+}
+
+input[type=text] {
+    width: 100%;
+    padding: 12px 12px;
+    margin: 8px 0;
+    box-sizing: border-box;
+}
+
+input[type=text] {
+    border: 2px solid black;
+    border-radius: 4px;
+}
+
+input[type=text]:focus {
+    border: 3px solid #555;
+}
+
+button {
+    background-color: darkcyan;
+    border: none;
+    color: white;
+    padding: 10px 17px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+}
+
+button:hover {background-color: #3e8e41}
+
+.listed_user {
+    display: flex;
+    margin-bottom: 10px;
+}
+
