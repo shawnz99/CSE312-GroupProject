@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from pymongo import MongoClient
+import bcrypt
 
 app = Flask(__name__)
 
@@ -18,20 +19,24 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        account = {
-            'username': request.form['username'],
-            'password': request.form['password']
-        }
+        username = request.form['username']
 
-        query = accounts.insert_one(account)
-        
-        if query.inserted_id:
-            msg = 'Account has been created!'
+        if accounts.find_one({'username': username}):
+            msg = 'Username already exists.'
         else:
-            msg = 'There was an error creating your account.'
+            plain_password = request.form['password'].encode('utf8')
+            hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
+            account = {
+                'username': username,
+                'password': hashed_password
+            }
+            if accounts.insert_one(account).inserted_id:
+                msg = 'Account has been created!'
+            else:
+                msg = 'There was an error creating your account.'
         
         return render_template('register.html', msg=msg)
-    else:
+    elif request.method == 'GET':
         return render_template('register.html')
     
 if __name__ == '__main__':
