@@ -1,17 +1,29 @@
 from flask import Flask, render_template, request
+from flask_socketio import SocketIO, send, emit
+import json
 import bcrypt
-from flask_socketio import SocketIO
 from pymongo import MongoClient
 
 
+# app.config['SECRET_KEY'] = 'secret!'
+
+app = Flask(__name__, template_folder='./templates')
+#app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
+socketio = SocketIO(app)
+
+database = {
+    "users": []
+}
 
 client = MongoClient('mongodb://localhost:27017/')
 db = client['C3WAT']
 accounts = db['accounts']
 
-app = Flask(__name__, template_folder='./templates')
-#app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
-socketio = SocketIO(app)
+# loads homepage
+@app.route('/')
+def home():  # put application's code here
+    users = ["andy", "ryan", "shawn", "kevin"]
+    return render_template('home.html', users=users)
 
 # @app.route('/')
 # def home():
@@ -21,14 +33,14 @@ socketio = SocketIO(app)
 def login():
     return "Login"
 
-@app.route('/', methods=['GET', 'POST'])
-def sessions():  # put application's code here
-    try:
-        # Just have to put users here
-        users = ['paul', 'chris', 'david', 'fuck']
-        return render_template('session.html', data=users) 
-    except Exception as e:
-        return(str(e))
+#@app.route('/', methods=['GET', 'POST'])
+#def sessions():  # put application's code here
+#    try:
+#        # Just have to put users here
+#        users = ['paul', 'chris', 'david', 'fuck']
+#        return render_template('session.html', data=users) 
+#    except Exception as e:
+#        return(str(e))
 
 @app.route('/dm', methods=['GET', 'POST'])
 def dms():
@@ -38,10 +50,6 @@ def dms():
 def messageReceived(methods=['GET', 'POST']):
     print('message was recieved!!!')
 
-@socketio.on('my event')
-def handle_my_custom_event(json, methods=['GET', 'POST']):
-    print('recieved my event: ' + str(json))
-    socketio.emit('my response', json, callback=messageReceived)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -65,7 +73,35 @@ def register():
         return render_template('register.html', msg=msg)
     elif request.method == 'GET':
         return render_template('register.html')
+      
+ # receive websocket from event
+@socketio.on('connection')
+def handle_my_custom_event(json_data):
+    print('received json: ' + json_data)
+    print(request.sid)
+    database["users"] += request.sid
+    
+
+# receive direct message and send to user
+@socketio.on('send_msg')
+def handle_my_custom_event(json_data):
+    print('received json: ' + json_data)
+    data = json.loads(json_data)
+    send_data = json.dumps({'sender': request.sid, 'msg': data["msg"]})
+    print(send_data)
+    send_to = database["users"][-1] #would get from data["username"]
+    emit("receive_msg", send_data, to=request.sid)
+    
+@socketio.on('my event')
+def handle_my_custom_event(json, methods=['GET', 'POST']):
+    print('recieved my event: ' + str(json))
+    socketio.emit('my response', json, callback=messageReceived)
+
     
 if __name__ == '__main__':
+    socketio.run(app, "0.0.0.0", "8002", debug=True)
+
+# if __name__ == '__main__':
+#   app.run("0.0.0.0", "8002", "debug")
     # Listens to localhost:5000 by default
-    socketio.run(app, debug=True)
+    #socketio.run(app, debug=True)
