@@ -12,9 +12,29 @@ accounts = db['accounts']
 def home():
     return render_template('index.html')
 
-@app.route('/login')
+@app.route('/login',  methods=['GET', 'POST'])
 def login():
-    return render_template('login_page.html')
+    if request.method == 'POST':
+        username = request.form['username']
+        print('TESTING!')
+
+        if accounts.find_one({'username' : username}):
+            login_user = accounts.find_one({'username': username})
+            plain_password = request.form['password'].encode('utf8')
+            hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
+            print('Hashed Password = ' + hashed_password)
+            print('Database Password = ' + login_user['password'])
+            if hashed_password == login_user['password']:
+                msg = 'Succesfully logged in!'
+                return render_template('login.html', msg = msg)
+        else:
+            msg = 'Username was not found!'
+            return render_template('login.html', msg = msg)
+
+    elif request.method == 'GET':
+        return render_template('login.html')
+
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
