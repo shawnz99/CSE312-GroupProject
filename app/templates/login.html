@@ -9,15 +9,17 @@
     <a href="{{url_for('home')}}">Home</a>
     <a href="/">Login</a>
 
-    <h1>Register an Account</h1>
+    <h1>Login to an Account</h1>
     <form method="POST">
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required minlength="3" maxlength="20">
-        <br>
+        <br/>
+        <br/>
         <label for="username">Password:</label>
         <input type="text" id="password" name="password" required minlength="8" maxlength="30">
-        <br>
-        <button>Sign Up</button>
+        <br/>
+        <br/>
+        <button>Log in</button>
         <br>
         <p>{{ msg }}</p>
     </form>
