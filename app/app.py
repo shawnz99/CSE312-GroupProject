@@ -7,7 +7,7 @@ import os
 from pymongo import MongoClient
 
 # app.config['SECRET_KEY'] = 'secret!'
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = 'app/static/uploads'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__, template_folder='./templates')
