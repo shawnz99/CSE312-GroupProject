@@ -1,3 +1,4 @@
+
 # X On the homepage of the app, display a list of currently logged in users. 
 # X Next to each user in the list is an option to send them a DM. When a DM is sent to a user, 
 # X (kinda) a JavaScript alert appears containing the message and the username of the sender. 
@@ -7,56 +8,57 @@
 # Users can create an account and upload a profile picture (which they can change). 
 # In the list of currently logged in users, display each users’ profile picture
 
-from flask import Flask, render_template, request
+
+from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_socketio import SocketIO, send, emit
+from werkzeug.utils import secure_filename
 import json
 import bcrypt
+import os
 from pymongo import MongoClient
 
-
-# app.config['SECRET_KEY'] = 'secret!'
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__, template_folder='./templates')
-#app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
+app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
+app.config['UPLOAD_FOLDER'] = 'app/static/uploads'
 socketio = SocketIO(app)
 
-database = {
-    "users": []
-}
-
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongo')
 db = client['C3WAT']
 accounts = db['accounts']
 
-# loads homepage
-@app.route('/', methods=['GET', 'POST'])
-def home():  # put application's code here
-    users = ["andy", "ryan", "shawn", "kevin"]
-    return render_template('session.html', users=users)
-
-# @app.route('/')
-# def home():
-#    return render_template('index.html')
-
+# Homepage; DM's work in progress
+@app.route('/')
+def home():
+    if 'username' in session:
+        user = accounts.find_one({'username': session['username']})
+        users = accounts.find({'username': {'$ne': session['username']}, 'loggedIn': 'true'})
+        return render_template('home.html', users=users, img=user['picturePath'])
+    else:
+        return render_template('index.html')
+# Login Implementation
 @app.route('/login',  methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
-        print('TESTING!')
-
+        # Compares submitted password to hash in DB
         if accounts.find_one({'username' : username}):
             login_user = accounts.find_one({'username': username})
             plain_password = request.form['password'].encode('utf8')
-            hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
-            print('Hashed Password = ' + hashed_password)
-            print('Database Password = ' + login_user['password'])
-            if hashed_password == login_user['password']:
-                msg = 'Succesfully logged in!'
-                return render_template('login.html', msg = msg)
+            hashed_password = login_user['password']
+            if bcrypt.checkpw(plain_password, hashed_password):
+                session['username'] = username
+                accounts.update_one({'username': username}, {'$set': {'loggedIn': 'true'}})
+                print("Setting session username: " + username)
+                flash('Successfully logged in!')
+                return redirect(url_for('home'))
+            else:
+                flash('Wrong password.')
+                return redirect(url_for('login'))
         else:
-            msg = 'Username was not found!'
-            return render_template('login.html', msg = msg)
-
+            flash('Wrong username.')
+            return redirect(url_for('login'))
     elif request.method == 'GET':
         return render_template('login.html')
 
@@ -80,51 +82,96 @@ def messageReceived(methods=['GET', 'POST']):
     print('message was recieved!!!')
 
 
+# Register implementation
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
-
         if accounts.find_one({'username': username}):
-            msg = 'Username already exists.'
+            flash('Username already exists.')
+            return redirect(url_for('register'))
         else:
             plain_password = request.form['password'].encode('utf8')
             hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
             account = {
                 'username': username,
-                'password': hashed_password
+                'password': hashed_password,
+                'picturePath': 'uploads/default.png',
+                'loggedIn': 'false'
             }
             if accounts.insert_one(account).inserted_id:
-                msg = 'Account has been created!'
+                flash('Account has been created!')
+                return redirect(url_for('register'))
             else:
-                msg = 'There was an error creating your account.'
-        
-        return render_template('register.html', msg=msg)
+                flash('There was an error creating your account.')
+                return redirect(url_for('register'))
     elif request.method == 'GET':
         return render_template('register.html')
-      
- # receive websocket from event
-@socketio.on('connection')
-def handle_my_custom_event(json_data):
-    print('received json: ' + json_data)
-    print(request.sid)
-    database["users"] += request.sid
-    
+# Logout implementation
+@app.route('/logout', methods=['GET'])
+def logout():
+    print("Clearing session.")
+    accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}})
+    session.clear()
+    flash('Successfully logged out.')
+    return redirect(url_for('home'))
 
-# receive direct message and send to user
+# Helper function for image upload
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# File upload code source: https://flask.palletsprojects.com/en/2.0.x/patterns/fileuploads/
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    if 'username' in session:
+        if request.method == 'POST':
+            # Error checking for file upload
+            if 'file' not in request.files:
+                flash('Image upload failed.')
+                return redirect(url_for('settings'))
+            file = request.files['file']
+            if file.filename == '':
+                flash("No image uploaded.")
+                return redirect(url_for('settings'))
+            # Save image to server directory and update the path in DB
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                accounts.update_one({'username': session['username']}, {'$set': {'picturePath': "uploads/"+filename}})
+                return redirect(url_for('settings'))
+        elif request.method == 'GET':
+            user = accounts.find_one({'username': session['username']})
+            return render_template('settings.html', img=user['picturePath'])
+    else:
+        flash('Please login to view this page.')
+        return redirect(url_for('home'))
+
+# Update user's socket id every connection
+@socketio.on('connection')
+def connect(json_data):
+    if 'username' in session:
+        accounts.update_one({'username': session['username']}, {'$set': {'sid': request.sid, 'loggedIn': 'true'}})
+        print(f"Updating {session['username']} with socket id {request.sid}")
+# Toggle user to offline on socket disconnect
+@socketio.on('disconnect')
+def disconnect():
+    if 'username' in session:
+        accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}, '$unset': {'sid': 1}})
+
+# Receive direct message and send to user
 @socketio.on('send_msg')
-def handle_my_custom_event(json_data):
-    print('received json: ' + json_data)
+def send_msg(json_data):
     data = json.loads(json_data)
-    send_data = json.dumps({'sender': request.sid, 'msg': data["msg"]})
-    print(send_data)
-    send_to = database["users"][-1] #would get from data["username"]
-    emit("receive_msg", send_data, to=request.sid)
-    
-@socketio.on('my event')
-def handle_my_custom_event(json, methods=['GET', 'POST']):
-    print('recieved my event: ' + str(json))
-    socketio.emit('my response', json, callback=messageReceived)
+    from_user = accounts.find_one({'sid': request.sid})
+    send_data = json.dumps({'sender': from_user['username'], 'msg': data['msg']})
+    to_user = accounts.find_one({'username': data['username']})
+    emit("receive_msg", send_data, to=to_user['sid'])
+
+@app.route('/dm', methods=['GET', 'POST'])
+def dms():
+    print("here in the dms")
+    return render_template('dm.html')
 
 @socketio.on('vote')
 def handle_event():
@@ -132,7 +179,7 @@ def handle_event():
 
     
 if __name__ == '__main__':
-    socketio.run(app, "0.0.0.0", "8002", debug=True)
+    socketio.run(app, "0.0.0.0", "8000", debug=True)
 
 # if __name__ == '__main__':
 #   app.run("0.0.0.0", "8002", "debug")

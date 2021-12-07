@@ -4,21 +4,18 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Settings</title>
 </head>
+<body>
     <a href="{{url_for('home')}}">Home</a>
-    <a href="{{url_for('login')}}">Login</a>
-
-    <h1>Register an Account</h1>
-    <form method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required minlength="3" maxlength="20">
-        <br>
-        <label for="username">Password:</label>
-        <input type="password" id="password" name="password" required minlength="8" maxlength="30">
-        <br>
-        <button>Sign Up</button>
-        <br>
+    <a href="{{url_for('logout')}}">Log Out</a>
+    <h1>Settings</h1>
+    <h2>{{ session.username }}</h2>
+    <img src= "{{ url_for('static', filename=img) }}" alt="Profile Picture" style="width: 200px; height: 200px; border-radius: 50%;"/>
+    <h3>Change your profile picture</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" id="file" name="file">
+        <input type="submit">
     </form>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
