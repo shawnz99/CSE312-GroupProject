@@ -1,3 +1,12 @@
+# X On the homepage of the app, display a list of currently logged in users. 
+# X Next to each user in the list is an option to send them a DM. When a DM is sent to a user, 
+# X (kinda) a JavaScript alert appears containing the message and the username of the sender. 
+# Since that user has an option to send a DM to this user from their list,the option to reply exists
+# On the homepage of the app, provide an area where users can post text messages. 
+# Users can click a button to upvote each post via WebSockets which can be seen by all users without a refresh
+# Users can create an account and upload a profile picture (which they can change). 
+# In the list of currently logged in users, display each users’ profile picture
+
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
 import json
@@ -116,6 +125,10 @@ def handle_my_custom_event(json_data):
 def handle_my_custom_event(json, methods=['GET', 'POST']):
     print('recieved my event: ' + str(json))
     socketio.emit('my response', json, callback=messageReceived)
+
+@socketio.on('vote')
+def handle_event():
+    print('here')
 
     
 if __name__ == '__main__':

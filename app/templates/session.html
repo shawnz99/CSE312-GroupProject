@@ -6,7 +6,10 @@
 <body>
   <h3> chat </h3>
   {% for users in users %}
-    <p> {{ users }} <form action="/dm"> <input type="submit" value="dm?"> </form></p>
+    <p> 
+      {{ users }} 
+      <form action="/dm"> <input type="submit" value="dm?"> </form>
+    </p>
   {% endfor %}
 
   <h3 style='color: #ccc;font-size: 30px;'>No message yet..</h3>
@@ -44,9 +47,15 @@
       console.log( msg )
       if( typeof msg.user_name !== 'undefined' ) {
         $( 'h3' ).remove()
-        $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'</div>' )
+        $( 'div.message_holder' ).append( '<div><b style="color: #000">'+msg.user_name+'</b> '+msg.message+'  <button type="button" onclick=myFunction() > ^ </button> </div>' )
       }
     })
+
+    function myFunction() {
+      socket.emit('vote', {
+
+      })
+    }
   </script>
 
 </body>
