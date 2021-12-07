@@ -17,15 +17,12 @@ client = MongoClient('mongodb://localhost:27017/')
 db = client['C3WAT']
 accounts = db['accounts']
 
-database = {
-    "users": []
-}
 # Homepage; DM's work in progress
 @app.route('/')
 def home():
     if 'username' in session:
-        users = ["andy", "ryan", "shawn", "kevin"]
         user = accounts.find_one({'username': session['username']})
+        users = accounts.find({'username': {'$ne': session['username']}, 'loggedIn': 'true'})
         return render_template('home.html', users=users, img=user['picturePath'])
     else:
         return render_template('index.html')
@@ -41,6 +38,7 @@ def login():
             hashed_password = login_user['password']
             if bcrypt.checkpw(plain_password, hashed_password):
                 session['username'] = username
+                accounts.update_one({'username': username}, {'$set': {'loggedIn': 'true'}})
                 print("Setting session username: " + username)
                 flash('Successfully logged in!')
                 return redirect(url_for('home'))
@@ -66,11 +64,12 @@ def register():
             account = {
                 'username': username,
                 'password': hashed_password,
-                'picturePath': 'uploads/default.png'
+                'picturePath': 'uploads/default.png',
+                'loggedIn': 'false'
             }
             if accounts.insert_one(account).inserted_id:
                 flash('Account has been created!')
-                return redirect(url_for('login'))
+                return redirect(url_for('register'))
             else:
                 flash('There was an error creating your account.')
                 return redirect(url_for('register'))
@@ -80,7 +79,9 @@ def register():
 @app.route('/logout', methods=['GET'])
 def logout():
     print("Clearing session.")
+    accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}})
     session.clear()
+    flash('Successfully logged out.')
     return redirect(url_for('home'))
 
 # Helper function for image upload
@@ -114,35 +115,31 @@ def settings():
         flash('Please login to view this page.')
         return redirect(url_for('home'))
 
-# receive websocket from event
+# Update user's socket id every connection
 @socketio.on('connection')
-def handle_my_custom_event(json_data):
-    print('received json: ' + json_data)
-    print(request.sid)
-    database["users"] += request.sid
+def connect(json_data):
+    if 'username' in session:
+        accounts.update_one({'username': session['username']}, {'$set': {'sid': request.sid, 'loggedIn': 'true'}})
+        print(f"Updating {session['username']} with socket id {request.sid}")
+# Toggle user to offline on socket disconnect
+@socketio.on('disconnect')
+def disconnect():
+    if 'username' in session:
+        accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}, '$unset': {'sid': 1}})
 
-# receive direct message and send to user
+# Receive direct message and send to user
 @socketio.on('send_msg')
-def handle_my_custom_event(json_data):
-    print('received json: ' + json_data)
+def send_msg(json_data):
     data = json.loads(json_data)
-    send_data = json.dumps({'sender': request.sid, 'msg': data["msg"]})
-    print(send_data)
-    send_to = database["users"][-1] #would get from data["username"]
-    emit("receive_msg", send_data, to=request.sid)
-    
-@socketio.on('my event')
-def handle_my_custom_event(json, methods=['GET', 'POST']):
-    print('recieved my event: ' + str(json))
-    socketio.emit('my response', json, callback=messageReceived)
+    from_user = accounts.find_one({'sid': request.sid})
+    send_data = json.dumps({'sender': from_user['username'], 'msg': data['msg']})
+    to_user = accounts.find_one({'username': data['username']})
+    emit("receive_msg", send_data, to=to_user['sid'])
 
 @app.route('/dm', methods=['GET', 'POST'])
 def dms():
     print("here in the dms")
     return render_template('dm.html')
-
-def messageReceived(methods=['GET', 'POST']):
-    print('message was recieved!!!')
 
 if __name__ == '__main__':
     socketio.run(app, "0.0.0.0", "8002", debug=True)

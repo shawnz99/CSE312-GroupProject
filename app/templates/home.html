@@ -30,9 +30,12 @@
     <h2>USERS ONLINE</h1>
     {% for user in users %}
         <div class = listed_user>
-            <h3> DM {{ user }} </h3>
-            <input id="dm_{{ user }}" type="text" name="dm">
-            <button onclick="sendMessage('{{ user }}')">Send</button>
+            <div class="box" style="display: flex; align-items: center;">
+                <img src= "{{ url_for('static', filename=user.picturePath) }}" alt="Profile Picture" style="width: 50px; height: 50px; border-radius: 50%; float: left; position: relative;"/>
+                <h3> DM {{ user.username }} </h3>
+            </div>
+            <input id="dm_{{ user.username }}" type="text" name="dm">
+            <button onclick="sendMessage('{{ user.username }}')">Send</button>
         </div>
     {% endfor %}
 
