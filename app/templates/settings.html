@@ -7,13 +7,24 @@
     <title>Settings</title>
 </head>
 <body>
+    <a href="{{url_for('home')}}">Home</a>
+    <a href="{{url_for('logout')}}">Log Out</a>
     <h1>Settings</h1>
+    <h2>{{ session.username }}</h2>
     <img src= "{{ url_for('static', filename=img) }}" alt="Profile Picture" style="width: 200px; height: 200px; border-radius: 50%;"/>
     <h3>Change your profile picture</h3>
     <form method="POST" enctype="multipart/form-data">
         <input type="file" id="file" name="file">
         <input type="submit">
     </form>
-    <p>{{ msg }}</p>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class=flashes>
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 </body>
 </html>
