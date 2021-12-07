@@ -27,6 +27,7 @@ socketio = SocketIO(app)
 client = MongoClient('mongo')
 db = client['C3WAT']
 accounts = db['accounts']
+votes = 0
 
 # Homepage; DM's work in progress
 @app.route('/')
@@ -116,6 +117,12 @@ def logout():
     flash('Successfully logged out.')
     return redirect(url_for('home'))
 
+@app.route('/main', methods=['GET'])
+def mainhome():
+    users = ['name', 'name2', 'name3']
+    #return render_template('session.html', users=data)
+    return render_template('home.html', users=users)
+
 # Helper function for image upload
 def allowed_file(filename):
     return '.' in filename and \
@@ -168,18 +175,19 @@ def send_msg(json_data):
     to_user = accounts.find_one({'username': data['username']})
     emit("receive_msg", send_data, to=to_user['sid'])
 
-@app.route('/dm', methods=['GET', 'POST'])
-def dms():
-    print("here in the dms")
-    return render_template('dm.html')
+@socketio.on('my event')
+def handle_message(data):
+    emit('my response', data )
 
 @socketio.on('vote')
 def handle_event():
-    print('here')
+    votes = votes + 1
+    emit('vote_update', votes)
+    
 
     
 if __name__ == '__main__':
-    socketio.run(app, "0.0.0.0", "8000", debug=True)
+    socketio.run(app, "0.0.0.0", "8002", debug=True)
 
 # if __name__ == '__main__':
 #   app.run("0.0.0.0", "8002", "debug")
