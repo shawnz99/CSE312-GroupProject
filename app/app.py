@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session, url_for
 from flask_socketio import SocketIO, send, emit
 from werkzeug.utils import secure_filename
 import json
@@ -6,13 +6,12 @@ import bcrypt
 import os
 from pymongo import MongoClient
 
-# app.config['SECRET_KEY'] = 'secret!'
 UPLOAD_FOLDER = 'app/static/uploads'
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__, template_folder='./templates')
+app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-#app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 socketio = SocketIO(app)
 
 database = {
@@ -22,7 +21,6 @@ database = {
 client = MongoClient('mongodb://localhost:27017/')
 db = client['C3WAT']
 accounts = db['accounts']
-
 
 # loads homepage
 @app.route('/')
@@ -44,14 +42,14 @@ def login():
             login_user = accounts.find_one({'username': username})
             plain_password = request.form['password'].encode('utf8')
             hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
-            print('Hashed Password = ' + hashed_password)
-            print('Database Password = ' + login_user['password'])
-            if hashed_password == login_user['password']:
+            if bcrypt.checkpw(plain_password, hashed_password):
                 msg = 'Succesfully logged in!'
-                return render_template('login.html', msg = msg)
+                session['username'] = username
+                print("Setting session username to: " + username)
+                return render_template('home.html')
         else:
             msg = 'Username was not found!'
-            return render_template('login.html', msg = msg)
+            return render_template('login.html', msg=msg)
 
     elif request.method == 'GET':
         return render_template('login.html')
@@ -88,7 +86,8 @@ def register():
             hashed_password = bcrypt.hashpw(plain_password, bcrypt.gensalt())
             account = {
                 'username': username,
-                'password': hashed_password
+                'password': hashed_password,
+                'picturePath': 'uploads/default.png'
             }
             if accounts.insert_one(account).inserted_id:
                 msg = 'Account has been created!'
@@ -116,9 +115,11 @@ def settings():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return render_template('settings.html', msg="Image upload successful!")
+            accounts.update_one({'username': session['username']}, {'$set': {'picturePath': "uploads/"+filename}})
+            return redirect(url_for('settings'))
     elif request.method == 'GET':
-        return render_template('settings.html')
+        user = accounts.find_one({'username': session['username']})
+        return render_template('settings.html', img=user['picturePath'])
 
  # receive websocket from event
 @socketio.on('connection')
