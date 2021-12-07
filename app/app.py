@@ -20,10 +20,10 @@ db = client['C3WAT']
 accounts = db['accounts']
 
 # loads homepage
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def home():  # put application's code here
     users = ["andy", "ryan", "shawn", "kevin"]
-    return render_template('home.html', users=users)
+    return render_template('session.html', users=users)
 
 # @app.route('/')
 # def home():
@@ -64,8 +64,8 @@ def login():
 
 @app.route('/dm', methods=['GET', 'POST'])
 def dms():
-    print("here in the dms")
-    return render_template('dm.html')
+    users = ["andy", "ryan", "shawn", "kevin"]
+    return render_template('home.html', users=users)
 
 def messageReceived(methods=['GET', 'POST']):
     print('message was recieved!!!')
