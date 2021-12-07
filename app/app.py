@@ -13,7 +13,7 @@ app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
 app.config['UPLOAD_FOLDER'] = 'app/static/uploads'
 socketio = SocketIO(app)
 
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongo')
 db = client['C3WAT']
 accounts = db['accounts']
 
@@ -142,7 +142,7 @@ def dms():
     return render_template('dm.html')
 
 if __name__ == '__main__':
-    socketio.run(app, "0.0.0.0", "8002", debug=True)
+    socketio.run(app, "0.0.0.0", "8000", debug=True)
 
 # if __name__ == '__main__':
 #   app.run("0.0.0.0", "8002", "debug")
