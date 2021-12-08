@@ -8,7 +8,6 @@
   {% for users in users %}
     <p> 
       {{ users }} 
-      <form action="/dm"> <input type="submit" value="dm?"> </form>
     </p>
   {% endfor %}
 
@@ -52,8 +51,8 @@
     })
 
     function myFunction() {
-      socket.emit('vote', {
-
+      socket.emit('vote', (idk) => {
+        console.log(idk);
       })
     }
   </script>

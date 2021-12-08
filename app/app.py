@@ -28,6 +28,7 @@ client = MongoClient('mongo')
 db = client['C3WAT']
 accounts = db['accounts']
 votes = 0
+id = 0 ## This is for the chat so there is a id for each message to grab for the upvotes
 
 # Homepage; DM's work in progress
 @app.route('/')
@@ -177,13 +178,27 @@ def send_msg(json_data):
 
 @socketio.on('my event')
 def handle_message(data):
+    global votes
+    data['votes'] = votes
+
+    # Setting a unique ID for each message to be accessed by the vote
+    global id 
+    id = id + 1
+    data['id'] = id 
+    
+
     emit('my response', data )
 
 @socketio.on('vote')
-def handle_event():
+def handle_event(div_id):
+    global votes  
     votes = votes + 1
-    emit('vote_update', votes)
-    
+
+    emit('vote_update', {
+        'votes':votes, 
+        'div_id':div_id
+    }) 
+# TODO: Dict with id and then amount of votes since the id is specific to each message    
 
     
 if __name__ == '__main__':
