@@ -75,14 +75,6 @@ def login():
 #    except Exception as e:
 #        return(str(e))
 
-@app.route('/dm', methods=['GET', 'POST'])
-def dms():
-    users = ["andy", "ryan", "shawn", "kevin"]
-    return render_template('home.html', users=users)
-
-def messageReceived(methods=['GET', 'POST']):
-    print('message was recieved!!!')
-
 
 # Register implementation
 @app.route('/register', methods=['GET', 'POST'])
@@ -109,20 +101,16 @@ def register():
                 return redirect(url_for('register'))
     elif request.method == 'GET':
         return render_template('register.html')
+    
 # Logout implementation
 @app.route('/logout', methods=['GET'])
 def logout():
     print("Clearing session.")
-    accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}})
+    accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}, '$unset': {'sid': 1}})
     session.clear()
     flash('Successfully logged out.')
     return redirect(url_for('home'))
 
-@app.route('/main', methods=['GET'])
-def mainhome():
-    users = ['name', 'name2', 'name3']
-    #return render_template('session.html', users=data)
-    return render_template('home.html', users=users)
 
 # Helper function for image upload
 def allowed_file(filename):
@@ -157,24 +145,31 @@ def settings():
         return redirect(url_for('home'))
 
 # Update user's socket id every connection
-@socketio.on('connection')
+@socketio.on('connect')
 def connect(json_data):
+    print("Connecting session")
     if 'username' in session:
         accounts.update_one({'username': session['username']}, {'$set': {'sid': request.sid, 'loggedIn': 'true'}})
         print(f"Updating {session['username']} with socket id {request.sid}")
 # Toggle user to offline on socket disconnect
 @socketio.on('disconnect')
 def disconnect():
+    print("Disconnecting session")
     if 'username' in session:
-        accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}, '$unset': {'sid': 1}})
+        accounts.update_one({'username': session['username']}, {'$set': {'loggedIn': 'false'}})
+
 
 # Receive direct message and send to user
 @socketio.on('send_msg')
 def send_msg(json_data):
+    print(request.sid)
     data = json.loads(json_data)
     from_user = accounts.find_one({'sid': request.sid})
+    print(from_user)
+    print(data)
     send_data = json.dumps({'sender': from_user['username'], 'msg': data['msg']})
     to_user = accounts.find_one({'username': data['username']})
+    print(to_user)
     emit("receive_msg", send_data, to=to_user['sid'])
 
 @socketio.on('my event')
@@ -206,7 +201,7 @@ def handle_event(div_id):
 
     
 if __name__ == '__main__':
-    socketio.run(app, "0.0.0.0", "8002", debug=True)
+    socketio.run(app, "0.0.0.0", "8000", debug=True)
 
 # if __name__ == '__main__':
 #   app.run("0.0.0.0", "8002", "debug")
