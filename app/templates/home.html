@@ -59,13 +59,22 @@
         socket.emit( 'my event', {
             data: 'User Connected'
         } )
+
+        /* Snags the messages */
         var form = $( '#form' ).on( 'submit', function( e ) {
             e.preventDefault()
             let user_name  = $( 'input.username' ).val()
             let user_input = $( 'input.message' ).val()
+
+            user_input = charCheck(user_input);
+
+            /* 
+             *   Sends messages to server, 
+             *   charCheck is HTML inj prevention 
+             */
             socket.emit( 'my event', {
-            user_name : user_name,
-            message : user_input
+            user_name : charCheck(user_name),
+            message : charCheck(user_input) 
             } )
             $( 'input.message' ).val( '' ).focus()
         } )
@@ -77,15 +86,34 @@
         }
     })
 
+    /*
+     * Updates the Votes counter with the new value
+     */
     socket.on('vote_update', (data) => {
         var doc = document.getElementById(data.div_id)
         doc.getElementsByTagName("p")[0].innerHTML = 'Likes: ' + data.votes;
     })
 
+    /* 
+     *  Grabs the id of the message that had a vote 
+     *  on it and emits the id to server 
+     */
     function myFunction(id) {
         id = parseInt(id);
         socket.emit( 'vote', id)
+    }
 
+    /*Blocks HTML injection */
+    function charCheck(msg) {
+        if (msg.search("<") != -1 ) {
+            msg = msg.replaceAll(/</g, '&lt');
+        }
+
+        if ( msg.search(">") != -1) {
+            msg = msg.replaceAll(/>/g, '&gt');
+        }
+
+        return msg;
     }
 </script>
 </html>
