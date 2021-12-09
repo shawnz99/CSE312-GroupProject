@@ -73,8 +73,7 @@
         socket.on( 'my response', function( msg ) {
         if( typeof msg.user_name !== 'undefined' ) {
             $( 'h3' ).remove()
-            console.log(msg.id);
-            $( 'div.message_holder' ).append( '<div id='+msg.id+'><b style="color: #000">'+msg.user_name+': </b> '+msg.message+'  <button type="button" onclick=myFunction($(this).closest("div").attr("id")) > ^ </button> <p id=votes> votes: </p> </div>' )
+            $( 'div.message_holder' ).append( '<div id='+msg.id+'><b style="color: #000">'+msg.user_name+': </b> '+msg.message+'  <button type="button" onclick=myFunction($(this).closest("div").attr("id")) > Like & subscribe </button> <p id=votes> Likes: </p> </div>' )
         }
     })
 
@@ -84,8 +83,9 @@
     })
 
     function myFunction(id) {
-        
+        id = parseInt(id);
         socket.emit( 'vote', id)
+
     }
 </script>
 </html>
