@@ -1,3 +1,14 @@
+
+# X On the homepage of the app, display a list of currently logged in users. 
+# X Next to each user in the list is an option to send them a DM. When a DM is sent to a user, 
+# X (kinda) a JavaScript alert appears containing the message and the username of the sender. 
+# Since that user has an option to send a DM to this user from their list,the option to reply exists
+# On the homepage of the app, provide an area where users can post text messages. 
+# Users can click a button to upvote each post via WebSockets which can be seen by all users without a refresh
+# Users can create an account and upload a profile picture (which they can change). 
+# In the list of currently logged in users, display each users’ profile picture
+
+
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_socketio import SocketIO, send, emit
 from werkzeug.utils import secure_filename
@@ -16,6 +27,8 @@ socketio = SocketIO(app)
 client = MongoClient('mongo')
 db = client['C3WAT']
 accounts = db['accounts']
+votes = {}
+id = 0 ## This is for the chat so there is a id for each message to grab for the upvotes
 
 # Homepage; DM's work in progress
 @app.route('/')
@@ -50,6 +63,27 @@ def login():
             return redirect(url_for('login'))
     elif request.method == 'GET':
         return render_template('login.html')
+
+
+
+#@app.route('/', methods=['GET', 'POST'])
+#def sessions():  # put application's code here
+#    try:
+#        # Just have to put users here
+#        users = ['paul', 'chris', 'david', 'fuck']
+#        return render_template('session.html', data=users) 
+#    except Exception as e:
+#        return(str(e))
+
+@app.route('/dm', methods=['GET', 'POST'])
+def dms():
+    users = ["andy", "ryan", "shawn", "kevin"]
+    return render_template('home.html', users=users)
+
+def messageReceived(methods=['GET', 'POST']):
+    print('message was recieved!!!')
+
+
 # Register implementation
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -83,6 +117,12 @@ def logout():
     session.clear()
     flash('Successfully logged out.')
     return redirect(url_for('home'))
+
+@app.route('/main', methods=['GET'])
+def mainhome():
+    users = ['name', 'name2', 'name3']
+    #return render_template('session.html', users=data)
+    return render_template('home.html', users=users)
 
 # Helper function for image upload
 def allowed_file(filename):
@@ -137,13 +177,36 @@ def send_msg(json_data):
     to_user = accounts.find_one({'username': data['username']})
     emit("receive_msg", send_data, to=to_user['sid'])
 
-@app.route('/dm', methods=['GET', 'POST'])
-def dms():
-    print("here in the dms")
-    return render_template('dm.html')
+@socketio.on('my event')
+def handle_message(data):
+    global votes
+    global id 
 
+    # Setting a unique ID for each message to be accessed by the vote
+    id = id + 1
+    votes[id] = 0 
+    data['votes'] = votes[id]
+    data['id'] = id 
+    
+
+    emit('my response', data )
+
+@socketio.on('vote')
+def handle_event(div_id):
+    global votes  
+
+    # votes[id] isnt set here yet?
+    votes[div_id] = votes[div_id] + 1
+
+    emit('vote_update', {
+        'votes':votes[div_id], 
+        'div_id':div_id
+    }) 
+# TODO: Dict with id and then amount of votes since the id is specific to each message    
+
+    
 if __name__ == '__main__':
-    socketio.run(app, "0.0.0.0", "8000", debug=True)
+    socketio.run(app, "0.0.0.0", "8002", debug=True)
 
 # if __name__ == '__main__':
 #   app.run("0.0.0.0", "8002", "debug")
