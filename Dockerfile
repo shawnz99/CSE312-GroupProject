@@ -2,14 +2,14 @@ FROM python:3.9.7
 
 ENV HOME /root
 
-WORKDIR /root
+WORKDIR /app
 
 
 COPY requirements.txt ./
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY app/. .
 
 EXPOSE 8000
 

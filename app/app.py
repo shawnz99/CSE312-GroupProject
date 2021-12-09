@@ -21,7 +21,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__, template_folder='./templates')
 app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
-app.config['UPLOAD_FOLDER'] = 'app/static/uploads'
+app.config['UPLOAD_FOLDER'] = '/app/static/uploads'
 socketio = SocketIO(app)
 
 client = MongoClient('mongo')
@@ -145,6 +145,7 @@ def settings():
             # Save image to server directory and update the path in DB
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
+                print(os.getcwd())
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 accounts.update_one({'username': session['username']}, {'$set': {'picturePath': "uploads/"+filename}})
                 return redirect(url_for('settings'))
