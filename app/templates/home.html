@@ -79,7 +79,7 @@
 
     socket.on('vote_update', (data) => {
         var doc = document.getElementById(data.div_id)
-        doc.getElementsByTagName("p")[0].innerHTML = 'votes' + data.votes;
+        doc.getElementsByTagName("p")[0].innerHTML = 'Likes: ' + data.votes;
     })
 
     function myFunction(id) {
