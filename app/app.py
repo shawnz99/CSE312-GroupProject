@@ -18,6 +18,12 @@ from pymongo import MongoClient
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
+# Set-Cookie options
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+)
+
 app = Flask(__name__, template_folder='./templates')
 app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
 app.config['UPLOAD_FOLDER'] = '/app/static/uploads'
