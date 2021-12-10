@@ -195,7 +195,7 @@ def handle_message(data):
     data['id'] = id 
     
 
-    emit('my response', data )
+    emit('my response', data , broadcast=True)
 
 @socketio.on('vote')
 def handle_event(div_id):
@@ -207,7 +207,7 @@ def handle_event(div_id):
     emit('vote_update', {
         'votes':votes[div_id], 
         'div_id':div_id
-    }) 
+    }, broadcast=True) 
 # TODO: Dict with id and then amount of votes since the id is specific to each message    
 
     
