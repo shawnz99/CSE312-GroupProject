@@ -29,7 +29,16 @@ accounts = db['accounts']
 votes = {}
 id = 0 ## This is for the chat so there is a id for each message to grab for the upvotes
 
-# Homepage for DM and profile picture functionality
+
+# Adding security headers to all responses
+
+@app.after_request
+def apply_caching(response):
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+# Homepage; DM's work in progress
 @app.route('/')
 def home():
     if 'username' in session:
@@ -160,7 +169,13 @@ def send_msg(json_data):
     from_user = accounts.find_one({'sid': request.sid})
     send_data = json.dumps({'sender': from_user['username'], 'msg': data['msg']})
     to_user = accounts.find_one({'username': data['username']})
-    emit("receive_msg", send_data, to=to_user['sid'])
+    print(to_user['loggedIn'])
+    if to_user['loggedIn'] != 'false':
+        emit("receive_msg", send_data, to=to_user['sid'])
+    else:
+        send_data = json.dumps({'sender': "Server", 'msg': data['username'] + " is offline or in settings, please refresh page."})
+        emit("receive_msg", send_data, to=request.sid)
+
 
 @socketio.on('my event')
 def handle_message(data):
