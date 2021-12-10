@@ -1,14 +1,13 @@
-
-# X On the homepage of the app, display a list of currently logged in users. 
-# X Next to each user in the list is an option to send them a DM. When a DM is sent to a user, 
-# X (kinda) a JavaScript alert appears containing the message and the username of the sender. 
-# Since that user has an option to send a DM to this user from their list,the option to reply exists
-# On the homepage of the app, provide an area where users can post text messages. 
-# Users can click a button to upvote each post via WebSockets which can be seen by all users without a refresh
-# Users can create an account and upload a profile picture (which they can change). 
-# In the list of currently logged in users, display each users’ profile picture
-
-
+#
+# [X] On the homepage of the app, display a list of currently logged in users. 
+# [X] Next to each user in the list is an option to send them a DM. When a DM is sent to a user, 
+# [X] a JavaScript alert appears containing the message and the username of the sender. 
+# [X] Since that user has an option to send a DM to this user from their list,the option to reply exists
+# [ ] On the homepage of the app, provide an area where users can post text messages. 
+# [ ] Users can click a button to upvote each post via WebSockets which can be seen by all users without a refresh
+# [X] Users can create an account and upload a profile picture (which they can change). 
+# [X] In the list of currently logged in users, display each users’ profile picture
+#
 from flask import Flask, render_template, request, redirect, session, url_for, flash
 from flask_socketio import SocketIO, send, emit
 from werkzeug.utils import secure_filename
@@ -22,7 +21,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 app = Flask(__name__, template_folder='./templates')
 app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
 app.config['UPLOAD_FOLDER'] = '/app/static/uploads'
-socketio = SocketIO(app)
+socketio = SocketIO(app, logger=True)
 
 client = MongoClient('mongo')
 db = client['C3WAT']
@@ -44,10 +43,16 @@ def apply_headers(response):
 def home():
     if 'username' in session:
         user = accounts.find_one({'username': session['username']})
-        users = accounts.find({'username': {'$ne': session['username']}, 'loggedIn': 'true'})
-        return render_template('home.html', users=users, img=user['picturePath'])
+        if user:
+            users = accounts.find({'username': {'$ne': session['username']}, 'loggedIn': 'true'})
+            return render_template('home.html', users=users, img=user['picturePath'])
+        else:
+            print("Clearing session.")
+            session.clear()
+            return redirect(url_for('home'))
     else:
         return render_template('index.html')
+
 # Login Implementation
 @app.route('/login',  methods=['GET', 'POST'])
 def login():
@@ -72,18 +77,6 @@ def login():
             return redirect(url_for('login'))
     elif request.method == 'GET':
         return render_template('login.html')
-
-
-
-#@app.route('/', methods=['GET', 'POST'])
-#def sessions():  # put application's code here
-#    try:
-#        # Just have to put users here
-#        users = ['paul', 'chris', 'david', 'fuck']
-#        return render_template('session.html', data=users) 
-#    except Exception as e:
-#        return(str(e))
-
 
 # Register implementation
 @app.route('/register', methods=['GET', 'POST'])
@@ -160,6 +153,7 @@ def connect(json_data):
     if 'username' in session:
         accounts.update_one({'username': session['username']}, {'$set': {'sid': request.sid, 'loggedIn': 'true'}})
         print(f"Updating {session['username']} with socket id {request.sid}")
+
 # Toggle user to offline on socket disconnect
 @socketio.on('disconnect')
 def disconnect():
@@ -210,11 +204,5 @@ def handle_event(div_id):
     }) 
 # TODO: Dict with id and then amount of votes since the id is specific to each message    
 
-    
 if __name__ == '__main__':
     socketio.run(app, "0.0.0.0", "8000", debug=True)
-
-# if __name__ == '__main__':
-#   app.run("0.0.0.0", "8002", "debug")
-    # Listens to localhost:5000 by default
-    #socketio.run(app, debug=True)
