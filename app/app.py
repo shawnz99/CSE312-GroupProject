@@ -34,7 +34,7 @@ id = 0 ## This is for the chat so there is a id for each message to grab for the
 # Adding security headers to all responses
 
 @app.after_request
-def apply_caching(response):
+def apply_headers(response):
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers['X-Content-Type-Options'] = 'nosniff'
     return response
