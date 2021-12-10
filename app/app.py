@@ -14,17 +14,19 @@ from werkzeug.utils import secure_filename
 import json
 import bcrypt
 import os
+import secrets
 from pymongo import MongoClient
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
+
+
+app = Flask(__name__, template_folder='./templates')
 # Set-Cookie options
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
 )
-
-app = Flask(__name__, template_folder='./templates')
 app.config['SECRET_KEY'] = '59dadf181b39480eae2b277c981bfbda'
 app.config['UPLOAD_FOLDER'] = '/app/static/uploads'
 socketio = SocketIO(app, logger=True)
@@ -59,10 +61,21 @@ def home():
     else:
         return render_template('index.html')
 
+# Verify xsrf_token function
+def verify_xsrf_token(xsrf_token):
+    if xsrf_token == session['xsrf_token']:
+        return True
+    else:
+        return False
+
 # Login Implementation
 @app.route('/login',  methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        #Check xsrf token
+        if not verify_xsrf_token(request.form['xsrf_token']):
+            flash('Invalid XSRF Token')
+            return redirect(url_for('login'))
         username = request.form['username']
         # Compares submitted password to hash in DB
         if accounts.find_one({'username' : username}):
@@ -82,12 +95,30 @@ def login():
             flash('Wrong username.')
             return redirect(url_for('login'))
     elif request.method == 'GET':
-        return render_template('login.html')
+        xsrf_token = secrets.token_urlsafe(32)
+        session['xsrf_token'] = xsrf_token
+        return render_template('login.html', xsrf_token=xsrf_token)
+
+
+
+#@app.route('/', methods=['GET', 'POST'])
+#def sessions():  # put application's code here
+#    try:
+#        # Just have to put users here
+#        users = ['paul', 'chris', 'david', 'fuck']
+#        return render_template('session.html', data=users)
+#    except Exception as e:
+#        return(str(e))
+
 
 # Register implementation
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        #Check xsrf token
+        if not verify_xsrf_token(request.form['xsrf_token']):
+            flash('Invalid XSRF Token')
+            return redirect(url_for('register'))
         username = request.form['username']
         if accounts.find_one({'username': username}):
             flash('Username already exists.')
@@ -108,8 +139,10 @@ def register():
                 flash('There was an error creating your account.')
                 return redirect(url_for('register'))
     elif request.method == 'GET':
-        return render_template('register.html')
-    
+        xsrf_token = secrets.token_urlsafe(32)
+        session['xsrf_token'] = xsrf_token
+        return render_template('register.html', xsrf_token=xsrf_token)
+
 # Logout implementation
 @app.route('/logout', methods=['GET'])
 def logout():
